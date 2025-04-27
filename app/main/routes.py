@@ -8,7 +8,7 @@ from datetime import datetime
 
 @main_bp.route('/')
 def index():
-    year = 2025
+    year = datetime.now().year
     habits = Habit.query.all()
 
     habit_id = request.args.get('habit_id', type=int)

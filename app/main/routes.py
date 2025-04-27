@@ -1,5 +1,6 @@
 from flask import render_template, request, jsonify, redirect, url_for
 from app.main import main_bp
+from app.main.forms import AddHabitForm, AddActivityForm  # <-- updated import
 from app.models import Habit, HabitRecord
 from app import db
 import calendar
@@ -46,40 +47,41 @@ def index():
 
 @main_bp.route('/add-habit', methods=['GET', 'POST'])
 def add_habit():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        if name:
-            new_habit = Habit(name=name)
-            db.session.add(new_habit)
-            db.session.commit()
-            return redirect(url_for('main.index'))
-    return render_template('add_habit.html')
+    form = AddHabitForm()
+    if form.validate_on_submit():
+        new_habit = Habit(name=form.name.data)
+        db.session.add(new_habit)
+        db.session.commit()
+        return redirect(url_for('main.index'))
+    return render_template('add_habit.html', form=form)
 
 @main_bp.route('/add-activity', methods=['GET', 'POST'])
 def add_activity():
+    form = AddActivityForm()
     habits = Habit.query.all()
+    form.habit_id.choices = [(habit.id, habit.name) for habit in habits]
 
-    if request.method == 'POST':
-        habit_id = request.form.get('habit_id', type=int)
-        date_str = request.form.get('date')
-        completed = bool(request.form.get('completed'))
+    if form.validate_on_submit():
+        habit_id = form.habit_id.data
+        date = form.date.data
+        completed = form.completed.data
 
-        day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-
-        record = HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
+        record = HabitRecord.query.filter_by(habit_id=habit_id, date=date).first()
 
         if record:
             record.completed = completed
         else:
-            record = HabitRecord(habit_id=habit_id, date=day_date, completed=completed)
+            record = HabitRecord(habit_id=habit_id, date=date, completed=completed)
             db.session.add(record)
 
         db.session.commit()
         return redirect(url_for('main.index'))
 
-    today = datetime.today().strftime('%Y-%m-%d')
-    return render_template('add_activity.html', habits=habits, today=today)
-    
+    if not form.date.data:
+        form.date.data = datetime.today()
+
+    return render_template('add_activity.html', form=form)
+
 @main_bp.route('/toggle', methods=['POST'])
 def toggle_day():
     data = request.get_json()

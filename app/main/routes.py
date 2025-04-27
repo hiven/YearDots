@@ -1,4 +1,4 @@
-from flask import render_template, request, jsonify, redirect, url_for
+from flask import render_template, request, redirect, url_for
 from app.main import main_bp
 from app.main.forms import AddHabitForm, AddActivityForm
 from app.models import Habit, HabitRecord
@@ -35,7 +35,8 @@ def index():
         months.append({
             'name': month_name,
             'days': num_days,
-            'start_empty': first_weekday
+            'start_empty': first_weekday,
+            'month_number': month  # <-- Add real month number
         })
 
     return render_template('index.html',
@@ -61,7 +62,7 @@ def add_activity():
     habits = Habit.query.all()
     form.habit_id.choices = [(habit.id, habit.name) for habit in habits]
 
-    # Pre-fill form from URL params
+    # Pre-fill from query parameters
     habit_id_param = request.args.get('habit_id', type=int)
     date_param = request.args.get('date')
 

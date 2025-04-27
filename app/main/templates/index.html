@@ -23,9 +23,15 @@
 </div>
 
 <div class="year-nav">
-  <a href="{{ url_for('main.index', year=year-1) }}">← {{ year-1 }}</a>
+  {% if (year-1) in active_years %}
+    <a href="{{ url_for('main.index', year=year-1) }}">← {{ year-1 }}</a>
+  {% endif %}
+  
   <span style="font-weight: bold;">{{ year }}</span>
-  <a href="{{ url_for('main.index', year=year+1) }}">→ {{ year+1 }}</a>
+
+  {% if year < current_year %}
+    <a href="{{ url_for('main.index', year=year+1) }}">→ {{ year+1 }}</a>
+  {% endif %}
 </div>
 
 <h1>

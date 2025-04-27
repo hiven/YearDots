@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Activity</title>
+</head>
+<body>
+
+<h1>Add Activity</h1>
+
+<form method="POST">
+  <label for="habit">Habit:</label>
+  <select name="habit_id" id="habit" required>
+    {% for habit in habits %}
+      <option value="{{ habit.id }}">{{ habit.name }}</option>
+    {% endfor %}
+  </select>
+
+  <br><br>
+
+  <label for="date">Date:</label>
+  <input type="date" name="date" id="date" value="{{ today }}" required>
+
+  <br><br>
+
+  <label for="completed">Completed?</label>
+  <input type="checkbox" name="completed" id="completed" checked>
+
+  <br><br>
+
+  <button type="submit">Save Activity</button>
+</form>
+
+<br>
+<a href="{{ url_for('main.index') }}">Back to Calendar</a>
+
+</body>
+</html>

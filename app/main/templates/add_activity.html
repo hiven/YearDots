@@ -9,26 +9,18 @@
 <h1>Add Activity</h1>
 
 <form method="POST">
-  <label for="habit">Habit:</label>
-  <select name="habit_id" id="habit" required>
-    {% for habit in habits %}
-      <option value="{{ habit.id }}">{{ habit.name }}</option>
-    {% endfor %}
-  </select>
+  {{ form.hidden_tag() }}
 
-  <br><br>
+  {{ form.habit_id.label }}<br>
+  {{ form.habit_id() }}<br><br>
 
-  <label for="date">Date:</label>
-  <input type="date" name="date" id="date" value="{{ today }}" required>
+  {{ form.date.label }}<br>
+  {{ form.date() }}<br><br>
 
-  <br><br>
+  {{ form.completed.label }}
+  {{ form.completed() }}<br><br>
 
-  <label for="completed">Completed?</label>
-  <input type="checkbox" name="completed" id="completed" checked>
-
-  <br><br>
-
-  <button type="submit">Save Activity</button>
+  {{ form.submit() }}
 </form>
 
 <br>

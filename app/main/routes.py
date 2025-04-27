@@ -108,17 +108,25 @@ def add_activity():
     if date_param and not form.date.data:
         form.date.data = datetime.strptime(date_param, '%Y-%m-%d')
 
+    existing_record = None
+    if form.habit_id.data and form.date.data:
+        existing_record = HabitRecord.query.filter_by(habit_id=form.habit_id.data, date=form.date.data).first()
+        if existing_record and not form.note.data:
+            form.note.data = existing_record.note
+        if existing_record and not form.completed.data:
+            form.completed.data = existing_record.completed
+
     if form.validate_on_submit():
         habit_id = form.habit_id.data
         date = form.date.data
         completed = form.completed.data
-        note = form.note.data  # <-- Capture the note
+        note = form.note.data
 
         record = HabitRecord.query.filter_by(habit_id=habit_id, date=date).first()
 
         if record:
             record.completed = completed
-            record.note = note  # Update existing note
+            record.note = note
         else:
             record = HabitRecord(habit_id=habit_id, date=date, completed=completed, note=note)
             db.session.add(record)
@@ -127,6 +135,7 @@ def add_activity():
         return redirect(url_for('main.index'))
 
     return render_template('add_activity.html', form=form)
+
 
 @main_bp.route('/edit-habit/<int:habit_id>', methods=['GET', 'POST'])
 def edit_habit(habit_id):

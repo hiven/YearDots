@@ -3,6 +3,7 @@
 {% block title %}Habit Tracker - Calendar{% endblock %}
 
 {% block content %}
+
 <div class="habit-select">
   {% if habits %}
     <form method="GET" action="/">
@@ -19,6 +20,12 @@
   {% else %}
     <p>No habits yet. <a href="{{ url_for('main.add_habit') }}">Add a Habit</a> to start tracking!</p>
   {% endif %}
+</div>
+
+<div class="year-nav">
+  <a href="{{ url_for('main.index', year=year-1) }}">← {{ year-1 }}</a>
+  <span style="font-weight: bold;">{{ year }}</span>
+  <a href="{{ url_for('main.index', year=year+1) }}">→ {{ year+1 }}</a>
 </div>
 
 <h1>
@@ -40,7 +47,9 @@
         {% for day in range(1, month.days + 1) %}
           {% set full_date = '{}-{:02d}-{:02d}'.format(year, month.month_number, day) %}
           {% if selected_habit %}
-            <a class="dot {% if full_date in completed_dates %}active{% endif %}"
+            <a class="dot
+                      {% if full_date in completed_dates %}active{% endif %}
+                      {% if full_date == today %}today{% endif %}"
                href="{{ url_for('main.add_activity') }}?habit_id={{ selected_habit.id }}&date={{ full_date }}"
                title="Add activity for {{ full_date }}">
             </a>
@@ -52,4 +61,5 @@
     </div>
   {% endfor %}
 </div>
+
 {% endblock %}

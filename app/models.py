@@ -21,6 +21,7 @@ class HabitRecord(db.Model):
     habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     completed = db.Column(db.Boolean, default=False)
+    note = db.Column(db.String(255))
 
     def __repr__(self):
         return f'<HabitRecord {self.habit_id} {self.date} {self.completed}>'

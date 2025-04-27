@@ -10,4 +10,5 @@ class AddActivityForm(FlaskForm):
     habit_id = SelectField('Habit', coerce=int, validators=[DataRequired()])
     date = DateField('Date', validators=[DataRequired()])
     completed = BooleanField('Completed')
+    note = StringField('Note')  # <-- New note field
     submit = SubmitField('Save Activity')

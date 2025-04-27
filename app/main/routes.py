@@ -18,4 +18,4 @@ def year_in_dots():
             'start_empty': first_weekday
         })
 
-    return render_template('main/year.html', months=months, year=year)
+    return render_template('main/index.html', months=months, year=year)

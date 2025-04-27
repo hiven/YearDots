@@ -100,7 +100,6 @@ def add_activity():
     habits = Habit.query.all()
     form.habit_id.choices = [(habit.id, habit.name) for habit in habits]
 
-    # Pre-fill from query parameters
     habit_id_param = request.args.get('habit_id', type=int)
     date_param = request.args.get('date')
 
@@ -113,13 +112,15 @@ def add_activity():
         habit_id = form.habit_id.data
         date = form.date.data
         completed = form.completed.data
+        note = form.note.data  # <-- Capture the note
 
         record = HabitRecord.query.filter_by(habit_id=habit_id, date=date).first()
 
         if record:
             record.completed = completed
+            record.note = note  # Update existing note
         else:
-            record = HabitRecord(habit_id=habit_id, date=date, completed=completed)
+            record = HabitRecord(habit_id=habit_id, date=date, completed=completed, note=note)
             db.session.add(record)
 
         db.session.commit()

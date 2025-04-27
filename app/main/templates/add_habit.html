@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Add Habit</title>
-</head>
-<body>
+{% extends "base.html" %}
 
+{% block title %}Add Habit{% endblock %}
+
+{% block content %}
 <h1>Add a New Habit</h1>
 
 <form method="POST">
@@ -19,6 +16,4 @@
 
 <br>
 <a href="{{ url_for('main.index') }}">Back to Calendar</a>
-
-</body>
-</html>
+{% endblock %}

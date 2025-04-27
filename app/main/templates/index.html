@@ -51,6 +51,12 @@
       margin-bottom: 20px;
       text-align: center;
     }
+    .habit-select a {
+      margin-left: 10px;
+      text-decoration: none;
+      color: #007aff;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +72,7 @@
         {% endfor %}
       </select>
       <a href="{{ url_for('main.add_habit') }}">+ Add Habit</a>
+      <a href="{{ url_for('main.add_activity') }}">+ Add Activity</a>
     </form>
   {% else %}
     <p>No habits yet. <a href="{{ url_for('main.add_habit') }}">Add a Habit</a> to start tracking!</p>

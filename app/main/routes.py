@@ -11,10 +11,13 @@ def index():
     habits = Habit.query.all()
 
     habit_id = request.args.get('habit_id', type=int)
-    if habit_id:
-        selected_habit = Habit.query.get_or_404(habit_id)
-    else:
-        selected_habit = habits[0] if habits else None
+    selected_habit = None
+
+    if habits:
+        if habit_id:
+            selected_habit = Habit.query.get_or_404(habit_id)
+        else:
+            selected_habit = habits[0]
 
     months = []
     completed_dates = set()
@@ -56,7 +59,7 @@ def add_habit():
 def toggle_day():
     data = request.get_json()
     habit_id = data.get('habit_id')
-    date_str = data.get('date')  # e.g., "2025-01-01"
+    date_str = data.get('date')  # "2025-01-01"
     day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
 
     record = HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()

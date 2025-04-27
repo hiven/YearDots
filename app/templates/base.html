@@ -1,1 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Habit Tracker{% endblock %}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+      margin: 0;
+    }
+    .year-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px 20px;
+      max-width: 1000px;
+      margin: 20px auto;
+    }
+    .month {
+      text-align: center;
+      color: #ccc;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+      justify-content: center;
+      width: fit-content;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #e5f0ff;
+      border-radius: 50%;
+      display: inline-block;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .dot.active {
+      background: #007aff;
+    }
+    .dot.empty {
+      visibility: hidden;
+    }
+    .habit-select {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .habit-select a {
+      margin-left: 10px;
+      text-decoration: none;
+      color: #007aff;
+      font-weight: bold;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
 
+{% block content %}
+<!-- Other templates will insert their body here -->
+{% endblock %}
+
+</body>
+</html>

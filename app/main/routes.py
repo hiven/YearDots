@@ -55,6 +55,31 @@ def add_habit():
             return redirect(url_for('main.index'))
     return render_template('add_habit.html')
 
+@main_bp.route('/add-activity', methods=['GET', 'POST'])
+def add_activity():
+    habits = Habit.query.all()
+
+    if request.method == 'POST':
+        habit_id = request.form.get('habit_id', type=int)
+        date_str = request.form.get('date')
+        completed = bool(request.form.get('completed'))
+
+        day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+        record = HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
+
+        if record:
+            record.completed = completed
+        else:
+            record = HabitRecord(habit_id=habit_id, date=day_date, completed=completed)
+            db.session.add(record)
+
+        db.session.commit()
+        return redirect(url_for('main.index'))
+
+    today = datetime.today().strftime('%Y-%m-%d')
+    return render_template('add_activity.html', habits=habits, today=today)
+    
 @main_bp.route('/toggle', methods=['POST'])
 def toggle_day():
     data = request.get_json()

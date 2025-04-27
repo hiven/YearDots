@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Habits{% endblock %}
+
+{% block content %}
+<h1>Manage Habits</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Habit Name</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for habit in habits %}
+      <tr>
+        <td>{{ habit.name }}</td>
+        <td>
+          <a href="{{ url_for('main.edit_habit', habit_id=habit.id) }}">✏️ Edit</a>
+          |
+          <form method="POST" action="{{ url_for('main.delete_habit', habit_id=habit.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this habit?');">
+            <button type="submit" style="background:none; border:none; color:#c00; cursor:pointer;">🗑️ Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<br>
+<a href="{{ url_for('main.index') }}">← Back to Calendar</a>
+{% endblock %}

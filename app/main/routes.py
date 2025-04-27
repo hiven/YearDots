@@ -139,6 +139,18 @@ def edit_habit(habit_id):
 
     return render_template('edit_habit.html', form=form, habit=habit)
 
+@main_bp.route('/manage-habits')
+def manage_habits():
+    habits = Habit.query.all()
+    return render_template('manage_habits.html', habits=habits)
+
+@main_bp.route('/delete-habit/<int:habit_id>', methods=['POST'])
+def delete_habit(habit_id):
+    habit = Habit.query.get_or_404(habit_id)
+    db.session.delete(habit)
+    db.session.commit()
+    return redirect(url_for('main.manage_habits'))
+
 
 @main_bp.route('/toggle', methods=['POST'])
 def toggle_day():

@@ -5,8 +5,8 @@ app = Flask(__name__)
 app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 
-from app.video import video_bp
-app.register_blueprint(video_bp)
+from app.main import main_bp
+app.register_blueprint(main_bp)
 
 # Create the database tables
 with app.app_context():

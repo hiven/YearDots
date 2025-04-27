@@ -41,6 +41,17 @@ def index():
                            year=year,
                            completed_dates=completed_dates)
 
+@main_bp.route('/add-habit', methods=['GET', 'POST'])
+def add_habit():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        if name:
+            new_habit = Habit(name=name)
+            db.session.add(new_habit)
+            db.session.commit()
+            return redirect(url_for('main.index'))
+    return render_template('add_habit.html')
+
 @main_bp.route('/toggle', methods=['POST'])
 def toggle_day():
     data = request.get_json()

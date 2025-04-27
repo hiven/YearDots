@@ -1,6 +1,6 @@
 from flask import render_template, request, jsonify, redirect, url_for
 from app.main import main_bp
-from app.main.forms import AddHabitForm, AddActivityForm  # <-- updated import
+from app.main.forms import AddHabitForm, AddActivityForm
 from app.models import Habit, HabitRecord
 from app import db
 import calendar
@@ -61,6 +61,15 @@ def add_activity():
     habits = Habit.query.all()
     form.habit_id.choices = [(habit.id, habit.name) for habit in habits]
 
+    # Pre-fill form from URL params
+    habit_id_param = request.args.get('habit_id', type=int)
+    date_param = request.args.get('date')
+
+    if habit_id_param and not form.habit_id.data:
+        form.habit_id.data = habit_id_param
+    if date_param and not form.date.data:
+        form.date.data = datetime.strptime(date_param, '%Y-%m-%d')
+
     if form.validate_on_submit():
         habit_id = form.habit_id.data
         date = form.date.data
@@ -77,26 +86,4 @@ def add_activity():
         db.session.commit()
         return redirect(url_for('main.index'))
 
-    if not form.date.data:
-        form.date.data = datetime.today()
-
     return render_template('add_activity.html', form=form)
-
-@main_bp.route('/toggle', methods=['POST'])
-def toggle_day():
-    data = request.get_json()
-    habit_id = data.get('habit_id')
-    date_str = data.get('date')  # "2025-01-01"
-    day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-
-    record = HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
-
-    if record:
-        record.completed = not record.completed
-    else:
-        record = HabitRecord(habit_id=habit_id, date=day_date, completed=True)
-        db.session.add(record)
-
-    db.session.commit()
-
-    return jsonify(success=True, completed=record.completed)

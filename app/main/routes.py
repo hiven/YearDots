@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, redirect, url_for, jsonify
 from app.main import main_bp
 from app.main.forms import AddHabitForm, AddActivityForm
 from app.models import Habit, HabitRecord
@@ -83,3 +83,65 @@ def index():
                            completed_dates=completed_dates,
                            active_years=active_years,
                            view=view)
+
+@main_bp.route('/add-habit', methods=['GET', 'POST'])
+def add_habit():
+    form = AddHabitForm()
+    if form.validate_on_submit():
+        new_habit = Habit(name=form.name.data)
+        db.session.add(new_habit)
+        db.session.commit()
+        return redirect(url_for('main.index'))
+    return render_template('add_habit.html', form=form)
+
+@main_bp.route('/add-activity', methods=['GET', 'POST'])
+def add_activity():
+    form = AddActivityForm()
+    habits = Habit.query.all()
+    form.habit_id.choices = [(habit.id, habit.name) for habit in habits]
+
+    # Pre-fill from query parameters
+    habit_id_param = request.args.get('habit_id', type=int)
+    date_param = request.args.get('date')
+
+    if habit_id_param and not form.habit_id.data:
+        form.habit_id.data = habit_id_param
+    if date_param and not form.date.data:
+        form.date.data = datetime.strptime(date_param, '%Y-%m-%d')
+
+    if form.validate_on_submit():
+        habit_id = form.habit_id.data
+        date = form.date.data
+        completed = form.completed.data
+
+        record = HabitRecord.query.filter_by(habit_id=habit_id, date=date).first()
+
+        if record:
+            record.completed = completed
+        else:
+            record = HabitRecord(habit_id=habit_id, date=date, completed=completed)
+            db.session.add(record)
+
+        db.session.commit()
+        return redirect(url_for('main.index'))
+
+    return render_template('add_activity.html', form=form)
+
+@main_bp.route('/toggle', methods=['POST'])
+def toggle_day():
+    data = request.get_json()
+    habit_id = data.get('habit_id')
+    date_str = data.get('date')
+    day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+    record = HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
+
+    if record:
+        record.completed = not record.completed
+    else:
+        record = HabitRecord(habit_id=habit_id, date=day_date, completed=True)
+        db.session.add(record)
+
+    db.session.commit()
+
+    return jsonify(success=True, completed=record.completed)

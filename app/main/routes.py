@@ -127,6 +127,19 @@ def add_activity():
 
     return render_template('add_activity.html', form=form)
 
+@main_bp.route('/edit-habit/<int:habit_id>', methods=['GET', 'POST'])
+def edit_habit(habit_id):
+    habit = Habit.query.get_or_404(habit_id)
+    form = AddHabitForm(obj=habit)  # Pre-fill the form with the existing name
+
+    if form.validate_on_submit():
+        habit.name = form.name.data
+        db.session.commit()
+        return redirect(url_for('main.index'))
+
+    return render_template('edit_habit.html', form=form, habit=habit)
+
+
 @main_bp.route('/toggle', methods=['POST'])
 def toggle_day():
     data = request.get_json()

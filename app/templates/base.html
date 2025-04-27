@@ -46,6 +46,10 @@
     .dot.active {
       background: #007aff;
     }
+    .dot.today {
+      border: 2px solid #ffa500;
+      background: #fff8e1;
+    }
     .dot.empty {
       visibility: hidden;
     }
@@ -59,13 +63,22 @@
       color: #007aff;
       font-weight: bold;
     }
+    .year-nav {
+      text-align: center;
+      margin: 10px 0;
+    }
+    .year-nav a {
+      text-decoration: none;
+      color: #007aff;
+      font-weight: bold;
+      margin: 0 10px;
+    }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
 {% block content %}
-<!-- Other templates will insert their body here -->
 {% endblock %}
 
 </body>

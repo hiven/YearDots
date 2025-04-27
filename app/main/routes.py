@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, jsonify
+from flask import render_template, request, jsonify, redirect, url_for
 from app.main import main_bp
 from app.models import Habit, HabitRecord
 from app import db
@@ -6,18 +6,22 @@ import calendar
 from datetime import datetime
 
 @main_bp.route('/')
-def home():
-    habits = Habit.query.all()
-    return render_template('index.html', habits=habits)
-
-@main_bp.route('/habit/<int:habit_id>')
-def view_habit(habit_id):
+def index():
     year = 2025
-    months = []
+    habits = Habit.query.all()
 
-    habit = Habit.query.get_or_404(habit_id)
-    records = HabitRecord.query.filter_by(habit_id=habit.id).all()
-    completed_dates = {record.date.strftime('%Y-%m-%d') for record in records if record.completed}
+    habit_id = request.args.get('habit_id', type=int)
+    if habit_id:
+        selected_habit = Habit.query.get_or_404(habit_id)
+    else:
+        selected_habit = habits[0] if habits else None
+
+    months = []
+    completed_dates = set()
+
+    if selected_habit:
+        records = HabitRecord.query.filter_by(habit_id=selected_habit.id).all()
+        completed_dates = {record.date.strftime('%Y-%m-%d') for record in records if record.completed}
 
     for month in range(1, 13):
         month_name = calendar.month_abbr[month]
@@ -30,13 +34,18 @@ def view_habit(habit_id):
             'start_empty': first_weekday
         })
 
-    return render_template('habit.html', habit=habit, months=months, year=year, completed_dates=completed_dates)
+    return render_template('index.html',
+                           habits=habits,
+                           selected_habit=selected_habit,
+                           months=months,
+                           year=year,
+                           completed_dates=completed_dates)
 
 @main_bp.route('/toggle', methods=['POST'])
 def toggle_day():
     data = request.get_json()
     habit_id = data.get('habit_id')
-    date_str = data.get('date')  # "2025-01-01"
+    date_str = data.get('date')  # e.g., "2025-01-01"
     day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
 
     record = HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
@@ -50,16 +59,3 @@ def toggle_day():
     db.session.commit()
 
     return jsonify(success=True, completed=record.completed)
-
-@main_bp.route('/add-habit', methods=['GET', 'POST'])
-def add_habit():
-    if request.method == 'POST':
-        name = request.form.get('name')
-
-        if name:
-            new_habit = Habit(name=name)
-            db.session.add(new_habit)
-            db.session.commit()
-            return redirect(url_for('main.home'))
-
-    return render_template('add_habit.html')

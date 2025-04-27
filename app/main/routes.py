@@ -108,16 +108,15 @@ def add_activity():
     if date_param and not form.date.data:
         form.date.data = datetime.strptime(date_param, '%Y-%m-%d')
 
+    # Only once habit and date are populated
     existing_record = None
     if form.habit_id.data and form.date.data:
         existing_record = HabitRecord.query.filter_by(habit_id=form.habit_id.data, date=form.date.data).first()
 
-        if existing_record:
-            # Only if a record exists: prefill note and completed
-            if form.note.data is None:
-                form.note.data = existing_record.note
-            if form.completed.data is None:
-                form.completed.data = existing_record.completed
+    if request.method == 'GET' and existing_record:
+        # Only when first loading the page, prefill
+        form.completed.data = existing_record.completed
+        form.note.data = existing_record.note
 
     if form.validate_on_submit():
         habit_id = form.habit_id.data
@@ -138,6 +137,7 @@ def add_activity():
         return redirect(url_for('main.index'))
 
     return render_template('add_activity.html', form=form)
+
 
 
 

@@ -40,7 +40,7 @@
       border-radius: 50%;
       display: inline-block;
       cursor: pointer;
-      text-decoration: none; /* remove underline for <a> */
+      text-decoration: none;
     }
     .dot.active {
       background: #007aff;
@@ -97,7 +97,7 @@
           <div class="dot empty"></div>
         {% endfor %}
         {% for day in range(1, month.days + 1) %}
-          {% set full_date = '{}-{:02d}-{:02d}'.format(year, loop.index, day) %}
+          {% set full_date = '{}-{:02d}-{:02d}'.format(year, month.month_number, day) %}
           {% if selected_habit %}
             <a class="dot {% if full_date in completed_dates %}active{% endif %}"
                href="{{ url_for('main.add_activity') }}?habit_id={{ selected_habit.id }}&date={{ full_date }}"

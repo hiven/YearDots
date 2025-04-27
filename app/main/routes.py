@@ -12,7 +12,8 @@ def index():
     if not year:
         year = datetime.now().year
 
-    today = datetime.now().strftime('%Y-%m-%d')  # Format like "2025-04-28"
+    today = datetime.now().strftime('%Y-%m-%d')
+    current_year = datetime.now().year  # Pass separately
 
     habits = Habit.query.all()
     habit_id = request.args.get('habit_id', type=int)
@@ -23,6 +24,12 @@ def index():
             selected_habit = Habit.query.get_or_404(habit_id)
         else:
             selected_habit = habits[0]
+
+    # Find years where there are HabitRecords
+    active_years = set()
+    all_records = HabitRecord.query.all()
+    for record in all_records:
+        active_years.add(record.date.year)
 
     months = []
     completed_dates = set()
@@ -40,7 +47,7 @@ def index():
             'name': month_name,
             'days': num_days,
             'start_empty': first_weekday,
-            'month_number': month  # real month number for date building
+            'month_number': month
         })
 
     return render_template('index.html',
@@ -48,48 +55,7 @@ def index():
                            selected_habit=selected_habit,
                            months=months,
                            year=year,
+                           current_year=current_year,
                            today=today,
-                           completed_dates=completed_dates)
-
-@main_bp.route('/add-habit', methods=['GET', 'POST'])
-def add_habit():
-    form = AddHabitForm()
-    if form.validate_on_submit():
-        new_habit = Habit(name=form.name.data)
-        db.session.add(new_habit)
-        db.session.commit()
-        return redirect(url_for('main.index'))
-    return render_template('add_habit.html', form=form)
-
-@main_bp.route('/add-activity', methods=['GET', 'POST'])
-def add_activity():
-    form = AddActivityForm()
-    habits = Habit.query.all()
-    form.habit_id.choices = [(habit.id, habit.name) for habit in habits]
-
-    # Pre-fill from query parameters
-    habit_id_param = request.args.get('habit_id', type=int)
-    date_param = request.args.get('date')
-
-    if habit_id_param and not form.habit_id.data:
-        form.habit_id.data = habit_id_param
-    if date_param and not form.date.data:
-        form.date.data = datetime.strptime(date_param, '%Y-%m-%d')
-
-    if form.validate_on_submit():
-        habit_id = form.habit_id.data
-        date = form.date.data
-        completed = form.completed.data
-
-        record = HabitRecord.query.filter_by(habit_id=habit_id, date=date).first()
-
-        if record:
-            record.completed = completed
-        else:
-            record = HabitRecord(habit_id=habit_id, date=date, completed=completed)
-            db.session.add(record)
-
-        db.session.commit()
-        return redirect(url_for('main.index'))
-
-    return render_template('add_activity.html', form=form)
+                           completed_dates=completed_dates,
+                           active_years=active_years)

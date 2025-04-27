@@ -1,7 +1,68 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Year in Dots {{ year }}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+      margin: 0;
+    }
+    .year-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .month {
+      text-align: center;
+      color: #ccc;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+      justify-content: center;
+      width: fit-content;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #e5f0ff;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot.empty {
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
 
-{% block title %}Videos{% endblock %}
+<div class="year-grid">
+  {% for month in months %}
+    <div class="month">
+      <div>{{ month.name }}</div>
+      <div class="dots">
+        {% for _ in range(month.start_empty) %}
+          <div class="dot empty"></div>
+        {% endfor %}
+        {% for day in range(1, month.days + 1) %}
+          <div class="dot" title="{{ month.name }} {{ day }}"></div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
 
-{% block content %}
-    <h1>Videos</h1>
-{% endblock %}
+</body>
+</html>

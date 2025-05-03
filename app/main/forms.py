@@ -1,14 +1,23 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, DateField, BooleanField, TextAreaField, SubmitField
+from wtforms import (
+    BooleanField,
+    DateField,
+    SelectField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+)
 from wtforms.validators import DataRequired
 
+
 class AddHabitForm(FlaskForm):
-    name = StringField('Habit Name', validators=[DataRequired()])
-    submit = SubmitField('Add Habit')
+    name = StringField("Habit Name", validators=[DataRequired()])
+    submit = SubmitField("Add Habit")
+
 
 class AddActivityForm(FlaskForm):
-    habit_id = SelectField('Habit', coerce=int, validators=[DataRequired()])
-    date = DateField('Date', validators=[DataRequired()])
-    completed = BooleanField('Completed')
-    note = TextAreaField('Note')
-    submit = SubmitField('Save Activity')
+    habit_id = SelectField("Habit", coerce=int, validators=[DataRequired()])
+    date     = DateField("Date", validators=[DataRequired()])
+    completed = BooleanField("Completed")
+    note      = TextAreaField("Note")
+    submit    = SubmitField("Save Activity")

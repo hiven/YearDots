@@ -1,0 +1,8 @@
+{% macro dot(full_date, completed_dates, today, habit_id) -%}
+  <a class="dot
+           {% if full_date in completed_dates %}active{% endif %}
+           {% if full_date == today %}today{% endif %}"
+     href="{{ url_for('main.add_activity') }}?habit_id={{ habit_id }}&date={{ full_date }}"
+     title="Add or edit activity">
+  </a>
+{%- endmacro %}

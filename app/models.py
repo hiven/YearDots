@@ -1,27 +1,30 @@
-from app import db
 from datetime import datetime
+from app import db
+
 
 class Habit(db.Model):
-    __tablename__ = 'habits'
+    __tablename__ = "habits"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
+    id         = db.Column(db.Integer, primary_key=True)
+    name       = db.Column(db.String(100), nullable=False, unique=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship to habit records
-    records = db.relationship('HabitRecord', backref='habit', lazy=True, cascade='all, delete-orphan')
+    records = db.relationship(
+        "HabitRecord", backref="habit", lazy=True, cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
-        return f'<Habit {self.name}>'
+        return f"<Habit {self.name}>"
+
 
 class HabitRecord(db.Model):
-    __tablename__ = 'habit_records'
+    __tablename__ = "habit_records"
 
-    id = db.Column(db.Integer, primary_key=True)
-    habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False)
+    id        = db.Column(db.Integer, primary_key=True)
+    habit_id  = db.Column(db.Integer, db.ForeignKey("habits.id"), nullable=False)
+    date      = db.Column(db.Date, nullable=False)
     completed = db.Column(db.Boolean, default=False)
-    note = db.Column(db.String(255))
+    note      = db.Column(db.String(255))
 
     def __repr__(self):
-        return f'<HabitRecord {self.habit_id} {self.date} {self.completed}>'
+        return f"<HabitRecord {self.habit_id} {self.date} {self.completed}>"

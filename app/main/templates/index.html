@@ -1,102 +1,57 @@
 {% extends "base.html" %}
+{% from "_macros.html" import dot %}
 
-{% block title %}Habit Tracker - Calendar{% endblock %}
-
+{% block title %}Habit Tracker{% endblock %}
 {% block content %}
-
-<div class="habit-select">
-  {% if habits %}
-    <form method="GET" action="/" style="margin-bottom: 10px;">
-      <select name="habit_id" onchange="this.form.submit()">
-        {% for habit in habits %}
-          <option value="{{ habit.id }}" {% if selected_habit and habit.id == selected_habit.id %}selected{% endif %}>
-            {{ habit.name }}
-          </option>
-        {% endfor %}
-      </select>
-      <input type="hidden" name="view" value="{{ view }}">
-      <a href="{{ url_for('main.add_activity') }}">+ Add Activity</a>
-      <a href="{{ url_for('main.manage_habits') }}">⚙️ Manage Habits</a>
-    </form>
-
-    <form method="GET" action="/" style="margin-bottom: 20px;">
-      <input type="hidden" name="habit_id" value="{{ selected_habit.id }}">
-      <select name="view" onchange="this.form.submit()">
-        <option value="week" {% if view == 'week' %}selected{% endif %}>Week</option>
-        <option value="month" {% if view == 'month' %}selected{% endif %}>Month</option>
-        <option value="year" {% if view == 'year' %}selected{% endif %}>Year</option>
-      </select>
-    </form>
-
-  {% else %}
-    <p>No habits yet. <a href="{{ url_for('main.add_habit') }}">Add a Habit</a> to start tracking!</p>
-  {% endif %}
-</div>
 
 <div class="year-nav">
   {% if (year-1) in active_years %}
-    <a href="{{ url_for('main.index', year=year-1, habit_id=selected_habit.id, view=view) }}">← {{ year-1 }}</a>
+    <a href="?year={{ year-1 }}&view={{ view }}">← {{ year-1 }}</a>
   {% endif %}
-  
-  <span style="font-weight: bold;">{{ year }}</span>
-
+  <span style="font-weight:bold;">{{ year }}</span>
   {% if year < current_year %}
-    <a href="{{ url_for('main.index', year=year+1, habit_id=selected_habit.id, view=view) }}">→ {{ year+1 }}</a>
+    <a href="?year={{ year+1 }}&view={{ view }}">→ {{ year+1 }}</a>
   {% endif %}
 </div>
 
-<h1>
-  {% if selected_habit %}
-    Tracking: {{ selected_habit.name }}
-  {% else %}
-    Year Calendar
-  {% endif %}
-</h1>
+<form method="get" style="text-align:center;margin-bottom:20px;">
+  <input type="hidden" name="year" value="{{ year }}">
+  <select name="view" onchange="this.form.submit()">
+    <option value="week"  {% if view=='week'  %}selected{% endif %}>Week</option>
+    <option value="month" {% if view=='month' %}selected{% endif %}>Month</option>
+    <option value="year"  {% if view=='year'  %}selected{% endif %}>Year</option>
+  </select>
+  <a href="{{ url_for('main.add_activity') }}" style="margin-left:15px;">+ Add Activity</a>
+  <a href="{{ url_for('main.manage_habits') }}" style="margin-left:10px;">⚙ Manage Habits</a>
+</form>
 
-{% if view == 'week' %}
-  <div class="year-grid">
-    {% for full_date in months %}
-      <a class="dot
-                {% if full_date in completed_dates %}active{% endif %}
-                {% if full_date == today %}today{% endif %}"
-         href="{{ url_for('main.add_activity') }}?habit_id={{ selected_habit.id }}&date={{ full_date }}"
-         title="Add activity for {{ full_date }}">
-      </a>
-    {% endfor %}
-  </div>
-{% elif view == 'month' %}
-  <div class="year-grid">
-    {% for full_date in months %}
-      <a class="dot
-                {% if full_date in completed_dates %}active{% endif %}
-                {% if full_date == today %}today{% endif %}"
-         href="{{ url_for('main.add_activity') }}?habit_id={{ selected_habit.id }}&date={{ full_date }}"
-         title="Add activity for {{ full_date }}">
-      </a>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="year-grid">
-    {% for month in months %}
-      <div class="month">
-        <div>{{ month.name }}</div>
-        <div class="dots">
-          {% for _ in range(month.start_empty) %}
-            <div class="dot empty"></div>
-          {% endfor %}
-          {% for day in range(1, month.days + 1) %}
-            {% set full_date = '{}-{:02d}-{:02d}'.format(year, month.month_number, day) %}
-            <a class="dot
-                      {% if full_date in completed_dates %}active{% endif %}
-                      {% if full_date == today %}today{% endif %}"
-               href="{{ url_for('main.add_activity') }}?habit_id={{ selected_habit.id }}&date={{ full_date }}"
-               title="Add activity for {{ full_date }}">
-            </a>
-          {% endfor %}
+{% for block in habit_blocks %}
+  <h2>{{ block.habit.name }}</h2>
+
+  {% if view == 'year' %}
+    <div class="year-grid">
+      {% for month in months_or_days %}
+        <div class="month">
+          <div>{{ month.name }}</div>
+          <div class="dots">
+            {% for i in range(month.start_empty) %}
+              <div class="dot empty"></div>
+            {% endfor %}
+            {% for day in range(1, month.days + 1) %}
+              {% set full_date = '%s-%02d-%02d'|format(year, month.month_number, day) %}
+              {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+            {% endfor %}
+          </div>
         </div>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="year-grid">
+      {% for full_date in months_or_days %}
+        {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endfor %}
 
 {% endblock %}

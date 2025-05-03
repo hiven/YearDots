@@ -1,9 +1,8 @@
 """
-Main routes – now with just two views:
-    • week   → Mon-Sun this week
-    • total  → last 30 days (rolling)
+Main routes – only two calendar views:
+    • week  → Mon-Sun of the current week
+    • total → last 30 days rolling
 """
-import calendar
 from datetime import datetime, timedelta
 
 from flask import (
@@ -12,9 +11,7 @@ from flask import (
     render_template,
     request,
     url_for,
-    jsonify,
 )
-from flask_wtf.csrf import CSRFError, validate_csrf
 
 from app import db
 from app.models import Habit, HabitRecord
@@ -25,51 +22,58 @@ main_bp = Blueprint("main", __name__, template_folder="templates")
 
 # ─── helpers ─────────────────────────────────────────────────────────────
 def _date_span(view: str):
-    """Return a list[YYYY-MM-DD] for the selected view."""
+    """Return list[YYYY-MM-DD] covering the chosen view."""
     today = datetime.now().date()
 
     if view == "week":
-        monday = today - timedelta(days=today.weekday())  # 0 = Monday
-        return [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+        monday = today - timedelta(days=today.weekday())
+        return [
+            (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)
+        ]
 
-    # default / "total"  → last 30 days inclusive
-    return [(today - timedelta(days=delta)).strftime("%Y-%m-%d") for delta in range(29, -1, -1)]
+    # "total": today-29 … today
+    return [
+        (today - timedelta(days=delta)).strftime("%Y-%m-%d")
+        for delta in range(29, -1, -1)
+    ]
 
 
 def _completed_by_habit(records):
     bucket = {}
     for rec in records:
         if rec.completed:
-            bucket.setdefault(rec.habit_id, set()).add(rec.date.strftime("%Y-%m-%d"))
+            bucket.setdefault(rec.habit_id, set()).add(
+                rec.date.strftime("%Y-%m-%d")
+            )
     return bucket
 
 
-# ─── views ───────────────────────────────────────────────────────────────
+# ─── calendar view ───────────────────────────────────────────────────────
 @main_bp.route("/")
 def index():
-    view = request.args.get("view", default="week")  # "week" | "total"
+    view = request.args.get("view", default="week")  # week | total
 
-    habits  = Habit.query.order_by(Habit.name).all()
+    habits = Habit.query.order_by(Habit.name).all()
     records = HabitRecord.query.filter(
         HabitRecord.habit_id.in_([h.id for h in habits])
     ).all()
 
     completed = _completed_by_habit(records)
     habit_blocks = [
-        {"habit": h, "completed_dates": completed.get(h.id, set())} for h in habits
+        {"habit": h, "completed_dates": completed.get(h.id, set())}
+        for h in habits
     ]
 
-    context = dict(
+    return render_template(
+        "index.html",
         view=view,
         today=datetime.now().strftime("%Y-%m-%d"),
-        habit_blocks=habit_blocks,
         dates=_date_span(view),
+        habit_blocks=habit_blocks,
     )
 
-    return render_template("index.html", **context)
 
-
-# ─── remaining CRUD routes (unchanged from prior version) ────────────────
+# ─── remaining CRUD routes (unchanged) ───────────────────────────────────
 @main_bp.route("/add-habit", methods=["GET", "POST"])
 def add_habit():
     form = AddHabitForm()
@@ -109,7 +113,7 @@ def add_activity():
     form.habit_id.choices = [(h.id, h.name) for h in Habit.query.all()]
 
     habit_q = request.args.get("habit_id", type=int)
-    date_q  = request.args.get("date")
+    date_q = request.args.get("date")
 
     if habit_q and not form.habit_id.data:
         form.habit_id.data = habit_q
@@ -120,11 +124,12 @@ def add_activity():
         HabitRecord.query.filter_by(
             habit_id=form.habit_id.data, date=form.date.data
         ).first()
-        if form.habit_id.data and form.date.data else None
+        if form.habit_id.data and form.date.data
+        else None
     )
     if request.method == "GET" and existing:
         form.completed.data = existing.completed
-        form.note.data      = existing.note
+        form.note.data = existing.note
 
     if form.validate_on_submit():
         rec = (
@@ -134,7 +139,7 @@ def add_activity():
             or HabitRecord(habit_id=form.habit_id.data, date=form.date.data)
         )
         rec.completed = form.completed.data
-        rec.note      = form.note.data
+        rec.note = form.note.data
         db.session.add(rec)
         db.session.commit()
         return redirect(url_for("main.index"))

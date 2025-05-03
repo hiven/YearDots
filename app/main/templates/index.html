@@ -4,22 +4,10 @@
 {% block title %}Habit Tracker{% endblock %}
 {% block content %}
 
-<div class="year-nav">
-  {% if (year-1) in active_years %}
-    <a href="?year={{ year-1 }}&view={{ view }}">← {{ year-1 }}</a>
-  {% endif %}
-  <span style="font-weight:bold;">{{ year }}</span>
-  {% if year < current_year %}
-    <a href="?year={{ year+1 }}&view={{ view }}">→ {{ year+1 }}</a>
-  {% endif %}
-</div>
-
 <form method="get" style="text-align:center;margin-bottom:20px;">
-  <input type="hidden" name="year" value="{{ year }}">
   <select name="view" onchange="this.form.submit()">
-    <option value="week"  {% if view=='week'  %}selected{% endif %}>Week</option>
-    <option value="month" {% if view=='month' %}selected{% endif %}>Month</option>
-    <option value="year"  {% if view=='year'  %}selected{% endif %}>Year</option>
+    <option value="week"  {% if view=='week'  %}selected{% endif %}>This Week</option>
+    <option value="total" {% if view=='total' %}selected{% endif %}>Last 30 Days</option>
   </select>
   <a href="{{ url_for('main.add_activity') }}" style="margin-left:15px;">+ Add Activity</a>
   <a href="{{ url_for('main.manage_habits') }}" style="margin-left:10px;">⚙ Manage Habits</a>
@@ -28,30 +16,11 @@
 {% for block in habit_blocks %}
   <h2>{{ block.habit.name }}</h2>
 
-  {% if view == 'year' %}
-    <div class="year-grid">
-      {% for month in months_or_days %}
-        <div class="month">
-          <div>{{ month.name }}</div>
-          <div class="dots">
-            {% for i in range(month.start_empty) %}
-              <div class="dot empty"></div>
-            {% endfor %}
-            {% for day in range(1, month.days + 1) %}
-              {% set full_date = '%s-%02d-%02d'|format(year, month.month_number, day) %}
-              {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
-            {% endfor %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="year-grid">
-      {% for full_date in months_or_days %}
-        {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
-      {% endfor %}
-    </div>
-  {% endif %}
+  <div class="year-grid">
+    {% for full_date in dates %}
+      {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+    {% endfor %}
+  </div>
 {% endfor %}
 
 {% endblock %}

@@ -1,1 +1,48 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f9f9f9;
+  margin: 0;
+}
 
+/* calendars --------------------------------------------------- */
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px 20px;
+  max-width: 1000px;
+  margin: 20px auto 30px;        /* space between habit blocks */
+}
+
+.month {
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background: #e5f0ff;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.active { background: #007aff; }
+.dot.today  { border: 2px solid #ffa500; background: #fff8e1; }
+.dot.empty  { visibility: hidden; }
+
+/* misc -------------------------------------------------------- */
+.year-nav, .habit-select { text-align: centre; margin-bottom: 20px; }
+.year-nav a, .habit-select a { colour: #007aff; font-weight: bold; text-decoration: none; }

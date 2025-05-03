@@ -1,95 +1,75 @@
+"""
+Main routes – now with just two views:
+    • week   → Mon-Sun this week
+    • total  → last 30 days (rolling)
+"""
 import calendar
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 from flask import (
-    jsonify,
+    Blueprint,
     redirect,
     render_template,
     request,
     url_for,
+    jsonify,
 )
-from flask_wtf.csrf import validate_csrf, CSRFError
+from flask_wtf.csrf import CSRFError, validate_csrf
 
 from app import db
-from app.main import main_bp
-from app.main.forms import AddHabitForm, AddActivityForm
 from app.models import Habit, HabitRecord
+from app.main.forms import AddHabitForm, AddActivityForm
+
+main_bp = Blueprint("main", __name__, template_folder="templates")
 
 
-# ──────────────────────────────────────────────────────────────
+# ─── helpers ─────────────────────────────────────────────────────────────
+def _date_span(view: str):
+    """Return a list[YYYY-MM-DD] for the selected view."""
+    today = datetime.now().date()
+
+    if view == "week":
+        monday = today - timedelta(days=today.weekday())  # 0 = Monday
+        return [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+
+    # default / "total"  → last 30 days inclusive
+    return [(today - timedelta(days=delta)).strftime("%Y-%m-%d") for delta in range(29, -1, -1)]
+
+
+def _completed_by_habit(records):
+    bucket = {}
+    for rec in records:
+        if rec.completed:
+            bucket.setdefault(rec.habit_id, set()).add(rec.date.strftime("%Y-%m-%d"))
+    return bucket
+
+
+# ─── views ───────────────────────────────────────────────────────────────
 @main_bp.route("/")
 def index():
-    year = request.args.get("year", type=int) or datetime.now().year
-    view = request.args.get("view", default="year")          # week | month | year
+    view = request.args.get("view", default="week")  # "week" | "total"
 
-    today        = datetime.now().strftime("%Y-%m-%d")
-    current_year = datetime.now().year
-
-    habits = Habit.query.order_by(Habit.name).all()
-
-    # one query for the lot
+    habits  = Habit.query.order_by(Habit.name).all()
     records = HabitRecord.query.filter(
         HabitRecord.habit_id.in_([h.id for h in habits])
     ).all()
 
-    completed_by_habit = defaultdict(set)
-    active_years       = set()
-
-    for r in records:
-        active_years.add(r.date.year)
-        if r.completed:
-            completed_by_habit[r.habit_id].add(r.date.strftime("%Y-%m-%d"))
-
+    completed = _completed_by_habit(records)
     habit_blocks = [
-        {
-            "habit": habit,
-            "completed_dates": completed_by_habit.get(habit.id, set()),
-        }
-        for habit in habits
+        {"habit": h, "completed_dates": completed.get(h.id, set())} for h in habits
     ]
 
-    months_or_days = build_calendar_structure(view, year, current_year)
-
-    return render_template(
-        "index.html",
+    context = dict(
         view=view,
-        year=year,
-        current_year=current_year,
-        today=today,
+        today=datetime.now().strftime("%Y-%m-%d"),
         habit_blocks=habit_blocks,
-        months_or_days=months_or_days,
-        active_years=active_years,
+        dates=_date_span(view),
     )
 
-
-# ──────────────────────────────────────────────────────────────
-def build_calendar_structure(view: str, year: int, current_year: int):
-    """Return the list the template needs for the selected view."""
-    if view == "week":
-        today_dt = datetime.now()
-        start    = today_dt - timedelta(days=today_dt.weekday())   # Monday
-        return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
-
-    if view == "month":
-        month  = datetime.now().month if year == current_year else 1
-        ndays  = calendar.monthrange(year, month)[1]
-        return [f"{year}-{month:02d}-{d:02d}" for d in range(1, ndays + 1)]
-
-    # full year
-    months = []
-    for m in range(1, 13):
-        ndays, first_wkday = calendar.monthrange(year, m)
-        months.append({
-            "name": calendar.month_abbr[m],
-            "days": ndays,
-            "start_empty": first_wkday,
-            "month_number": m,
-        })
-    return months
+    return render_template("index.html", **context)
 
 
-# ──────────────────────────────────────────────────────────────
+# ─── remaining CRUD routes (unchanged from prior version) ────────────────
 @main_bp.route("/add-habit", methods=["GET", "POST"])
 def add_habit():
     form = AddHabitForm()
@@ -108,7 +88,7 @@ def manage_habits():
 @main_bp.route("/edit-habit/<int:habit_id>", methods=["GET", "POST"])
 def edit_habit(habit_id):
     habit = Habit.query.get_or_404(habit_id)
-    form  = AddHabitForm(obj=habit)
+    form = AddHabitForm(obj=habit)
     if form.validate_on_submit():
         habit.name = form.name.data
         db.session.commit()
@@ -123,7 +103,6 @@ def delete_habit(habit_id):
     return redirect(url_for("main.manage_habits"))
 
 
-# ──────────────────────────────────────────────────────────────
 @main_bp.route("/add-activity", methods=["GET", "POST"])
 def add_activity():
     form = AddActivityForm()
@@ -143,7 +122,6 @@ def add_activity():
         ).first()
         if form.habit_id.data and form.date.data else None
     )
-
     if request.method == "GET" and existing:
         form.completed.data = existing.completed
         form.note.data      = existing.note
@@ -162,5 +140,3 @@ def add_activity():
         return redirect(url_for("main.index"))
 
     return render_template("add_activity.html", form=form)
-
-

@@ -1,43 +1,31 @@
-from datetime import datetime, timedelta
-from flask import redirect, render_template, request, url_for
+"""
+Main routes for the Habit Tracker Flask app.
+
+Views provided by “/”:
+
+    • ?view=week     – current ISO week (Mon-Sun, one horizontal row)
+    • ?view=overall  – last 22 weeks as a 7 × 22 grid (Mon at top)
+
+All date-grid helpers live in app/main/helpers.py.
+"""
+from datetime import datetime
+
+from flask import (
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+
 from app import db
 from app.models import Habit, HabitRecord
 from app.main import main_bp
 from app.main.forms import AddHabitForm, AddActivityForm
-
-
-def _week_dates() -> list[str]:
-    today = datetime.now().date()
-    monday = today - timedelta(days=today.weekday())
-    return [
-        (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)
-    ]
-
-
-def _overall_grid() -> list[list[str]]:
-    today = datetime.now().date()
-    sunday = today + timedelta(days=(6 - today.weekday()))
-    columns = []
-
-    cur_sunday = sunday
-    for _ in range(22):
-        week = [
-            (cur_sunday - timedelta(days=d)).strftime("%Y-%m-%d") for d in range(7)
-        ][::-1]            # Monday first
-        columns.insert(0, week)
-        cur_sunday -= timedelta(days=7)
-
-    return [list(row) for row in zip(*columns)]      # 7 rows × 22 cols
-
-
-def _completed_by_habit(records):
-    bucket = {}
-    for rec in records:
-        if rec.completed:
-            bucket.setdefault(rec.habit_id, set()).add(
-                rec.date.strftime("%Y-%m-%d")
-            )
-    return bucket
+from app.main.helpers import (
+    week_span,
+    overall_grid,
+    completed_by_habit,        # ← moved out of this file
+)
 
 
 # ── calendar page ──────────────────────────────────────────────────────
@@ -45,17 +33,19 @@ def _completed_by_habit(records):
 def index():
     view = request.args.get("view", default="week")          # "week" | "overall"
 
+    # data
     habits = Habit.query.order_by(Habit.name).all()
     records = HabitRecord.query.filter(
         HabitRecord.habit_id.in_([h.id for h in habits])
     ).all()
 
-    completed = _completed_by_habit(records)
+    completed = completed_by_habit(records)
     habit_blocks = [
         {"habit": h, "completed_dates": completed.get(h.id, set())}
         for h in habits
     ]
 
+    # context for template
     context = dict(
         view=view,
         today=datetime.now().strftime("%Y-%m-%d"),
@@ -63,14 +53,14 @@ def index():
     )
 
     if view == "overall":
-        context["overall_grid"] = _overall_grid()
+        context["overall_grid"] = overall_grid()          # 7 rows × 22 columns
     else:
-        context["week_dates"] = _week_dates()
+        context["week_dates"] = week_span()               # 7 dates Mon-Sun
 
     return render_template("index.html", **context)
 
 
-# ── CRUD routes (unchanged) ────────────────────────────────────────────
+# ── CRUD routes ────────────────────────────────────────────────────────
 @main_bp.route("/add-habit", methods=["GET", "POST"])
 def add_habit():
     form = AddHabitForm()
@@ -110,7 +100,7 @@ def add_activity():
     form.habit_id.choices = [(h.id, h.name) for h in Habit.query.all()]
 
     habit_q = request.args.get("habit_id", type=int)
-    date_q = request.args.get("date")
+    date_q  = request.args.get("date")
 
     if habit_q and not form.habit_id.data:
         form.habit_id.data = habit_q
@@ -126,14 +116,14 @@ def add_activity():
     )
     if request.method == "GET" and existing:
         form.completed.data = existing.completed
-        form.note.data = existing.note
+        form.note.data      = existing.note
 
     if form.validate_on_submit():
         rec = existing or HabitRecord(
             habit_id=form.habit_id.data, date=form.date.data
         )
         rec.completed = form.completed.data
-        rec.note = form.note.data
+        rec.note      = form.note.data
         db.session.add(rec)
         db.session.commit()
         return redirect(url_for("main.index"))

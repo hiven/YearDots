@@ -2,24 +2,48 @@
 {% from "_macros.html" import dot %}
 
 {% block title %}Habit Tracker{% endblock %}
+
 {% block content %}
 
-<form method="get" style="text-align:center;margin-bottom:20px;">
-  <select name="view" onchange="this.form.submit()">
-    <option value="week"  {% if view=='week'  %}selected{% endif %}>This Week</option>
-    <option value="total" {% if view=='total' %}selected{% endif %}>Last 30 Days</option>
-  </select>
-  <a href="{{ url_for('main.add_activity') }}" style="margin-left:15px;">+ Add Activity</a>
-  <a href="{{ url_for('main.manage_habits') }}" style="margin-left:10px;">⚙ Manage Habits</a>
-</form>
+<!-- ── view selector ─────────────────────────────────────────────── -->
+<div class="view-tabs">
+  <a href="{{ url_for('main.index', view='week') }}"
+     class="{% if view=='week' %}active{% endif %}">Weekly</a>
+  <a href="{{ url_for('main.index', view='overall') }}"
+     class="{% if view=='overall' %}active{% endif %}">Overall</a>
+</div>
 
 {% for block in habit_blocks %}
-  <h2>{{ block.habit.name }}</h2>
+  <div class="habit-card">
+    <h2>{{ block.habit.name }}</h2>
 
-  <div class="year-grid">
-    {% for full_date in dates %}
-      {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
-    {% endfor %}
+    {% if view == 'week' %}
+      <!-- labels -->
+      <div class="week-labels">
+        {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+          <span class="day-label">{{ d }}</span>
+        {% endfor %}
+      </div>
+
+      <!-- seven dots -->
+      <div class="week-dots">
+        {% for full_date in week_dates %}
+          {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <!-- overall 22 × 7 grid -->
+      <div class="overall-grid">
+        {% for row in overall_grid %}          {# row = Monday … Sunday #}
+          <div class="overall-row">
+            {% for full_date in row %}
+              {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
   </div>
 {% endfor %}
 

@@ -1,9 +1,8 @@
-from os import getenv
-from dotenv import load_dotenv
+import os
 
-load_dotenv()                               # reads .env locally
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = getenv("DATABASE_URL")
+    # your .env already provides a full postgresql:// URL
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL") or "sqlite:///local.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = getenv("SECRET_KEY", "dev-key")
+    SECRET_KEY = os.getenv("SECRET_KEY", "dev-key")

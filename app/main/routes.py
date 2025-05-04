@@ -1,6 +1,17 @@
+"""
+Main routes.
+
+Views:
+    • view=week     → Monday-Sunday of the current ISO week
+    • view=overall  → rolling 22 weeks (154 days) shown as a 7 × 22 grid
+"""
 from datetime import datetime, timedelta
 from flask import (
-    jsonify, redirect, render_template, request, url_for
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
 
 from app import db
@@ -10,20 +21,36 @@ from app.main.forms import AddHabitForm, AddActivityForm
 
 
 # ── helpers ────────────────────────────────────────────────────────────
-def _date_span(view: str) -> list[str]:
-    today = datetime.now().date()
-
-    if view == "week":
-        monday = today - timedelta(days=today.weekday())
-        return [
-            (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)
-        ]
-
-    # default: rolling 30 days
+def _week_dates() -> list[str]:
+    """Return Mon-Sun (ISO) of the current week as YYYY-MM-DD strings."""
+    today  = datetime.now().date()
+    monday = today - timedelta(days=today.weekday())
     return [
-        (today - timedelta(days=delta)).strftime("%Y-%m-%d")
-        for delta in range(29, -1, -1)
+        (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)
     ]
+
+
+def _overall_grid() -> list[list[str]]:
+    """
+    Return a 7 × 22 matrix of dates (Mon at index 0) covering the last
+    22 complete weeks, newest week at the right-hand side.
+    """
+    today   = datetime.now().date()
+    sunday  = today + timedelta(days=(6 - today.weekday()))   # end of this week
+    columns = []
+
+    cur_sunday = sunday
+    for _ in range(22):
+        # build one column Sun … Mon then reverse → Mon … Sun
+        week = [
+            (cur_sunday - timedelta(days=delta)).strftime("%Y-%m-%d")
+            for delta in range(7)
+        ][::-1]
+        columns.insert(0, week)         # earliest week on the left
+        cur_sunday -= timedelta(days=7)
+
+    # transpose → rows = days (Mon first)  |  cols = weeks (22)
+    return [list(row) for row in zip(*columns)]
 
 
 def _completed_by_habit(records):
@@ -36,10 +63,10 @@ def _completed_by_habit(records):
     return bucket
 
 
-# ── views ──────────────────────────────────────────────────────────────
+# ── main calendar page ─────────────────────────────────────────────────
 @main_bp.route("/")
 def index():
-    view = request.args.get("view", default="week")    # "week" | "total"
+    view = request.args.get("view", default="week")  # "week" | "overall"
 
     habits  = Habit.query.order_by(Habit.name).all()
     records = HabitRecord.query.filter(
@@ -52,16 +79,24 @@ def index():
         for h in habits
     ]
 
+    if view == "overall":
+        grid = _overall_grid()          # 7 rows × 22 cols
+        week_dates = None
+    else:                               # default "week"
+        week_dates = _week_dates()
+        grid = None
+
     return render_template(
         "index.html",
         view=view,
         today=datetime.now().strftime("%Y-%m-%d"),
-        dates=_date_span(view),
+        week_dates=week_dates,   # list[str] when view=="week"
+        overall_grid=grid,       # list[list[str]] when view=="overall"
         habit_blocks=habit_blocks,
     )
 
 
-# CRUD routes ⤵︎  (unchanged from previous reply)
+# ── CRUD routes (unchanged) ────────────────────────────────────────────
 @main_bp.route("/add-habit", methods=["GET", "POST"])
 def add_habit():
     form = AddHabitForm()

@@ -10,10 +10,13 @@ class Habit(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     records = db.relationship(
-        "HabitRecord", backref="habit", lazy=True, cascade="all, delete-orphan"
+        "HabitRecord",
+        backref="habit",
+        lazy=True,
+        cascade="all, delete-orphan",
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<Habit {self.name}>"
 
 
@@ -26,5 +29,5 @@ class HabitRecord(db.Model):
     completed = db.Column(db.Boolean, default=False)
     note      = db.Column(db.String(255))
 
-    def __repr__(self):
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<HabitRecord {self.habit_id} {self.date} {self.completed}>"

@@ -1,29 +1,13 @@
-"""
-Main routes.
-
-Views:
-    • view=week     → Monday-Sunday of the current ISO week
-    • view=overall  → rolling 22 weeks (154 days) shown as a 7 × 22 grid
-"""
 from datetime import datetime, timedelta
-from flask import (
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
-
+from flask import redirect, render_template, request, url_for
 from app import db
 from app.models import Habit, HabitRecord
 from app.main import main_bp
 from app.main.forms import AddHabitForm, AddActivityForm
 
 
-# ── helpers ────────────────────────────────────────────────────────────
 def _week_dates() -> list[str]:
-    """Return Mon-Sun (ISO) of the current week as YYYY-MM-DD strings."""
-    today  = datetime.now().date()
+    today = datetime.now().date()
     monday = today - timedelta(days=today.weekday())
     return [
         (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)
@@ -31,26 +15,19 @@ def _week_dates() -> list[str]:
 
 
 def _overall_grid() -> list[list[str]]:
-    """
-    Return a 7 × 22 matrix of dates (Mon at index 0) covering the last
-    22 complete weeks, newest week at the right-hand side.
-    """
-    today   = datetime.now().date()
-    sunday  = today + timedelta(days=(6 - today.weekday()))   # end of this week
+    today = datetime.now().date()
+    sunday = today + timedelta(days=(6 - today.weekday()))
     columns = []
 
     cur_sunday = sunday
     for _ in range(22):
-        # build one column Sun … Mon then reverse → Mon … Sun
         week = [
-            (cur_sunday - timedelta(days=delta)).strftime("%Y-%m-%d")
-            for delta in range(7)
-        ][::-1]
-        columns.insert(0, week)         # earliest week on the left
+            (cur_sunday - timedelta(days=d)).strftime("%Y-%m-%d") for d in range(7)
+        ][::-1]            # Monday first
+        columns.insert(0, week)
         cur_sunday -= timedelta(days=7)
 
-    # transpose → rows = days (Mon first)  |  cols = weeks (22)
-    return [list(row) for row in zip(*columns)]
+    return [list(row) for row in zip(*columns)]      # 7 rows × 22 cols
 
 
 def _completed_by_habit(records):
@@ -63,12 +40,12 @@ def _completed_by_habit(records):
     return bucket
 
 
-# ── main calendar page ─────────────────────────────────────────────────
+# ── calendar page ──────────────────────────────────────────────────────
 @main_bp.route("/")
 def index():
-    view = request.args.get("view", default="week")  # "week" | "overall"
+    view = request.args.get("view", default="week")          # "week" | "overall"
 
-    habits  = Habit.query.order_by(Habit.name).all()
+    habits = Habit.query.order_by(Habit.name).all()
     records = HabitRecord.query.filter(
         HabitRecord.habit_id.in_([h.id for h in habits])
     ).all()
@@ -79,21 +56,18 @@ def index():
         for h in habits
     ]
 
-    if view == "overall":
-        grid = _overall_grid()          # 7 rows × 22 cols
-        week_dates = None
-    else:                               # default "week"
-        week_dates = _week_dates()
-        grid = None
-
-    return render_template(
-        "index.html",
+    context = dict(
         view=view,
         today=datetime.now().strftime("%Y-%m-%d"),
-        week_dates=week_dates,   # list[str] when view=="week"
-        overall_grid=grid,       # list[list[str]] when view=="overall"
         habit_blocks=habit_blocks,
     )
+
+    if view == "overall":
+        context["overall_grid"] = _overall_grid()
+    else:
+        context["week_dates"] = _week_dates()
+
+    return render_template("index.html", **context)
 
 
 # ── CRUD routes (unchanged) ────────────────────────────────────────────
@@ -136,7 +110,7 @@ def add_activity():
     form.habit_id.choices = [(h.id, h.name) for h in Habit.query.all()]
 
     habit_q = request.args.get("habit_id", type=int)
-    date_q  = request.args.get("date")
+    date_q = request.args.get("date")
 
     if habit_q and not form.habit_id.data:
         form.habit_id.data = habit_q
@@ -145,41 +119,23 @@ def add_activity():
 
     existing = (
         HabitRecord.query.filter_by(
-            habit_id=form.habit_id.data,
-            date=form.date.data,
+            habit_id=form.habit_id.data, date=form.date.data
         ).first()
         if form.habit_id.data and form.date.data
         else None
     )
     if request.method == "GET" and existing:
         form.completed.data = existing.completed
-        form.note.data      = existing.note
+        form.note.data = existing.note
 
     if form.validate_on_submit():
         rec = existing or HabitRecord(
-            habit_id=form.habit_id.data,
-            date=form.date.data,
+            habit_id=form.habit_id.data, date=form.date.data
         )
         rec.completed = form.completed.data
-        rec.note      = form.note.data
+        rec.note = form.note.data
         db.session.add(rec)
         db.session.commit()
         return redirect(url_for("main.index"))
 
     return render_template("add_activity.html", form=form)
-
-
-@main_bp.route("/toggle", methods=["POST"])
-def toggle_day():
-    data     = request.get_json()
-    habit_id = data.get("habit_id")
-    day_date = datetime.strptime(data.get("date"), "%Y-%m-%d").date()
-
-    rec = (
-        HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
-        or HabitRecord(habit_id=habit_id, date=day_date)
-    )
-    rec.completed = not rec.completed
-    db.session.add(rec)
-    db.session.commit()
-    return jsonify(success=True, completed=rec.completed)

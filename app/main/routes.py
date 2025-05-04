@@ -1,28 +1,16 @@
-"""
-Main routes – only two calendar views:
-    • week  → Mon-Sun of the current week
-    • total → last 30 days rolling
-"""
 from datetime import datetime, timedelta
-
 from flask import (
-    Blueprint,
-    redirect,
-    render_template,
-    request,
-    url_for,
+    jsonify, redirect, render_template, request, url_for
 )
 
 from app import db
 from app.models import Habit, HabitRecord
+from app.main import main_bp
 from app.main.forms import AddHabitForm, AddActivityForm
 
-main_bp = Blueprint("main", __name__, template_folder="templates")
 
-
-# ─── helpers ─────────────────────────────────────────────────────────────
-def _date_span(view: str):
-    """Return list[YYYY-MM-DD] covering the chosen view."""
+# ── helpers ────────────────────────────────────────────────────────────
+def _date_span(view: str) -> list[str]:
     today = datetime.now().date()
 
     if view == "week":
@@ -31,7 +19,7 @@ def _date_span(view: str):
             (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)
         ]
 
-    # "total": today-29 … today
+    # default: rolling 30 days
     return [
         (today - timedelta(days=delta)).strftime("%Y-%m-%d")
         for delta in range(29, -1, -1)
@@ -48,12 +36,12 @@ def _completed_by_habit(records):
     return bucket
 
 
-# ─── calendar view ───────────────────────────────────────────────────────
+# ── views ──────────────────────────────────────────────────────────────
 @main_bp.route("/")
 def index():
-    view = request.args.get("view", default="week")  # week | total
+    view = request.args.get("view", default="week")    # "week" | "total"
 
-    habits = Habit.query.order_by(Habit.name).all()
+    habits  = Habit.query.order_by(Habit.name).all()
     records = HabitRecord.query.filter(
         HabitRecord.habit_id.in_([h.id for h in habits])
     ).all()
@@ -73,7 +61,7 @@ def index():
     )
 
 
-# ─── remaining CRUD routes (unchanged) ───────────────────────────────────
+# CRUD routes ⤵︎  (unchanged from previous reply)
 @main_bp.route("/add-habit", methods=["GET", "POST"])
 def add_habit():
     form = AddHabitForm()
@@ -113,7 +101,7 @@ def add_activity():
     form.habit_id.choices = [(h.id, h.name) for h in Habit.query.all()]
 
     habit_q = request.args.get("habit_id", type=int)
-    date_q = request.args.get("date")
+    date_q  = request.args.get("date")
 
     if habit_q and not form.habit_id.data:
         form.habit_id.data = habit_q
@@ -122,26 +110,41 @@ def add_activity():
 
     existing = (
         HabitRecord.query.filter_by(
-            habit_id=form.habit_id.data, date=form.date.data
+            habit_id=form.habit_id.data,
+            date=form.date.data,
         ).first()
         if form.habit_id.data and form.date.data
         else None
     )
     if request.method == "GET" and existing:
         form.completed.data = existing.completed
-        form.note.data = existing.note
+        form.note.data      = existing.note
 
     if form.validate_on_submit():
-        rec = (
-            HabitRecord.query.filter_by(
-                habit_id=form.habit_id.data, date=form.date.data
-            ).first()
-            or HabitRecord(habit_id=form.habit_id.data, date=form.date.data)
+        rec = existing or HabitRecord(
+            habit_id=form.habit_id.data,
+            date=form.date.data,
         )
         rec.completed = form.completed.data
-        rec.note = form.note.data
+        rec.note      = form.note.data
         db.session.add(rec)
         db.session.commit()
         return redirect(url_for("main.index"))
 
     return render_template("add_activity.html", form=form)
+
+
+@main_bp.route("/toggle", methods=["POST"])
+def toggle_day():
+    data     = request.get_json()
+    habit_id = data.get("habit_id")
+    day_date = datetime.strptime(data.get("date"), "%Y-%m-%d").date()
+
+    rec = (
+        HabitRecord.query.filter_by(habit_id=habit_id, date=day_date).first()
+        or HabitRecord(habit_id=habit_id, date=day_date)
+    )
+    rec.completed = not rec.completed
+    db.session.add(rec)
+    db.session.commit()
+    return jsonify(success=True, completed=rec.completed)

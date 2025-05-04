@@ -1,4 +1,4 @@
-from app import create_app        # noqa: E402  (after .env is loaded)
+from app import create_app
 
 app = create_app()
 

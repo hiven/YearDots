@@ -5,6 +5,7 @@
 
 {% block content %}
 
+<!-- shortcuts -->
 <div style="text-align:center; margin-bottom:1rem;">
   <a href="{{ url_for('main.add_habit') }}">＋ Add habit</a> |
   <a href="{{ url_for('main.manage_habits') }}">Manage habits</a>
@@ -33,17 +34,17 @@
       <!-- seven dots -->
       <div class="week-dots">
         {% for full_date in week_dates %}
-          {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+          {{ dot(full_date, block.completed_dates, today, block.habit.id, block.colour) }}
         {% endfor %}
       </div>
 
     {% else %}
       <!-- overall 22 × 7 grid -->
       <div class="overall-grid">
-        {% for row in overall_grid %}          {# row = Monday … Sunday #}
+        {% for row in overall_grid %}
           <div class="overall-row">
             {% for full_date in row %}
-              {{ dot(full_date, block.completed_dates, today, block.habit.id) }}
+              {{ dot(full_date, block.completed_dates, today, block.habit.id, block.colour) }}
             {% endfor %}
           </div>
         {% endfor %}

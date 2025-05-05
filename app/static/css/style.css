@@ -9,13 +9,13 @@ body {
 .dot {
   width: 14px;
   height: 14px;
-  background: #e5f0ff;
+  background: #e5f0ff;              /* pale for incomplete */
   border-radius: 50%;
   display: inline-block;
   margin: 3px;
   cursor: pointer;
 }
-.dot.active { background: #007aff; }
+.dot.active { background: var(--dot-colour, #007aff); }
 .dot.today  { border: 2px solid #ffa500; background: #fff8e1; }
 
 /* ── view tabs ───────────────────────────────────────────────── */
@@ -41,7 +41,3 @@ body {
 
 /* ── card wrapper just for a little spacing ───────────────────── */
 .habit-card{margin-bottom:35px;}
-
-/* ── misc (your earlier typos fixed) ─────────────────────────── */
-.year-nav, .habit-select { text-align: center; margin-bottom: 20px; }
-.year-nav a, .habit-select a { color: #007aff; font-weight: bold; text-decoration: none; }

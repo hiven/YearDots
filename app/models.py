@@ -7,6 +7,7 @@ class Habit(db.Model):
 
     id         = db.Column(db.Integer, primary_key=True)
     name       = db.Column(db.String(100), nullable=False, unique=True)
+    colour     = db.Column(db.String(7),  nullable=False, default="#007aff")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     records = db.relationship(

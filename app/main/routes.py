@@ -3,10 +3,10 @@ Main routes for the Habit Tracker Flask app.
 
 Views provided by “/”:
 
-    • ?view=week     – current ISO week (Mon-Sun, one horizontal row)
-    • ?view=overall  – last 22 weeks as a 7 × 22 grid (Mon at top)
+    • ?view=week     – current ISO week (Mon–Sun, one horizontal row)
+    • ?view=overall  – last 22 weeks as a 7 × 22 grid (Mon at top)
 
-All date-grid helpers live in app/main/helpers.py.
+All date‑grid helpers live in app/main/helpers.py.
 """
 from datetime import datetime
 
@@ -24,14 +24,14 @@ from app.main.forms import AddHabitForm, AddActivityForm
 from app.main.helpers import (
     week_span,
     overall_grid,
-    completed_by_habit,        # ← moved out of this file
+    completed_by_habit,
 )
 
 
 # ── calendar page ──────────────────────────────────────────────────────
 @main_bp.route("/")
 def index():
-    view = request.args.get("view", default="week")          # "week" | "overall"
+    view = request.args.get("view", default="week")  # "week" | "overall"
 
     # data
     habits = Habit.query.order_by(Habit.name).all()
@@ -41,7 +41,11 @@ def index():
 
     completed = completed_by_habit(records)
     habit_blocks = [
-        {"habit": h, "completed_dates": completed.get(h.id, set())}
+        {
+            "habit": h,
+            "completed_dates": completed.get(h.id, set()),
+            "colour": h.colour,
+        }
         for h in habits
     ]
 
@@ -53,9 +57,9 @@ def index():
     )
 
     if view == "overall":
-        context["overall_grid"] = overall_grid()          # 7 rows × 22 columns
+        context["overall_grid"] = overall_grid()  # 7 rows × 22 columns
     else:
-        context["week_dates"] = week_span()               # 7 dates Mon-Sun
+        context["week_dates"] = week_span()       # 7 dates Mon–Sun
 
     return render_template("index.html", **context)
 
@@ -65,7 +69,7 @@ def index():
 def add_habit():
     form = AddHabitForm()
     if form.validate_on_submit():
-        db.session.add(Habit(name=form.name.data))
+        db.session.add(Habit(name=form.name.data, colour=form.colour.data))
         db.session.commit()
         return redirect(url_for("main.index"))
     return render_template("add_habit.html", form=form)
@@ -81,7 +85,8 @@ def edit_habit(habit_id):
     habit = Habit.query.get_or_404(habit_id)
     form = AddHabitForm(obj=habit)
     if form.validate_on_submit():
-        habit.name = form.name.data
+        habit.name   = form.name.data
+        habit.colour = form.colour.data
         db.session.commit()
         return redirect(url_for("main.index"))
     return render_template("edit_habit.html", form=form, habit=habit)
